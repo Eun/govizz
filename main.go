@@ -94,8 +94,13 @@ func run() int {
 	var deps []dep
 
 	for i := 0; i < len(*sourceArg); i++ {
-		if err := walkFileSystem(&deps, &visited, (*sourceArg)[i], true); err != nil {
+		path, err := filepath.Abs((*sourceArg)[i])
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable to walk directory `%s': %s\n", (*sourceArg)[i], err.Error())
+			continue
+		}
+		if err := walkFileSystem(&deps, &visited, path, true); err != nil {
+			fmt.Fprintf(os.Stderr, "unable to walk directory `%s': %s\n", path, err.Error())
 		}
 	}
 
@@ -124,6 +129,13 @@ func run() int {
 		}
 	}
 
+	// use package names instead of full paths
+
+	for i, dep := range deps {
+		deps[i].src = packageNameOfPath(dep.src)
+		deps[i].dst = packageNameOfPath(dep.dst)
+	}
+
 	if !*fileLevelFlag {
 		var depsDir []dep
 		for i := 0; i < len(deps); i++ {
@@ -136,13 +148,6 @@ func run() int {
 		removeDuplicateDeps(&depsDir)
 		deps = make([]dep, len(depsDir))
 		copy(deps, depsDir)
-	}
-
-	// use package names instead of full paths
-
-	for i, dep := range deps {
-		deps[i].src = packageNameOfPath(dep.src)
-		deps[i].dst = packageNameOfPath(dep.dst)
 	}
 
 	io.WriteString(out, "digraph main{\n\tedge[arrowhead=vee]\n\tgraph [rankdir=LR,compound=true,ranksep=1.0];\n")
