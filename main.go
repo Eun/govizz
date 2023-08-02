@@ -14,19 +14,26 @@ import (
 	"fmt"
 	"go/parser"
 	"go/token"
+	"hash/crc32"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"unicode"
 
-	"path/filepath"
-
-	"gopkg.in/alecthomas/kingpin.v2"
+	"github.com/alecthomas/kingpin/v2"
 )
 
 var (
-	sourceArg = kingpin.Arg("src", "source directory").Default("./").ExistingDirs()
-	outFlag   = kingpin.Flag("out", "output file").Default("-").String()
+	version = ""
+	commit  = ""
+	date    = ""
+)
+
+var (
+	sourceArg  = kingpin.Arg("src", "source directory").Default("./").ExistingDirs()
+	outFlag    = kingpin.Flag("out", "output file").Default("-").String()
+	formatFlag = kingpin.Flag("format", "format to use (dot or mermaidjs)").Default("dot").String()
 	// recursiveFlag     = kingpin.Flag("recursive", "walk the sources recursive").Short('r').Default("true").Bool()
 	includeTestFlag   = kingpin.Flag("tests", "include test files").Short('t').Default("false").Bool()
 	fileLevelFlag     = kingpin.Flag("fl", "summarize on file level").Short('f').Default("false").Bool()
@@ -50,7 +57,7 @@ func main() {
 }
 
 func run() int {
-	kingpin.Version("1.0.0")
+	kingpin.Version(fmt.Sprintf("%s %s %s", version, commit, date))
 	kingpin.Parse()
 
 	if sourceArg == nil || len(*sourceArg) <= 0 {
@@ -150,14 +157,30 @@ func run() int {
 		copy(deps, depsDir)
 	}
 
-	io.WriteString(out, "digraph main{\n\tedge[arrowhead=vee]\n\tgraph [rankdir=LR,compound=true,ranksep=1.0];\n")
-
-	for _, k := range deps {
-		fmt.Fprintf(out, "\t\"%s\"[shape=\"record\",label=\"%s\",style=\"solid\"]\n", k.src, k.src)
-		fmt.Fprintf(out, "\t\"%s\" -> \"%s\"\n", k.src, k.dst)
+	if formatFlag == nil {
+		dotFormat := "dot"
+		formatFlag = &dotFormat
 	}
 
-	io.WriteString(out, "}")
+	if *formatFlag == "mermaidjs" {
+		io.WriteString(out, "graph TD\n")
+	} else {
+		io.WriteString(out, "digraph main{\n\tedge[arrowhead=vee]\n\tgraph [rankdir=LR,compound=true,ranksep=1.0];\n")
+	}
+
+	for _, k := range deps {
+		if *formatFlag == "mermaidjs" {
+			fmt.Fprintf(out, "\t%d[%s] --> %d[%s]\n", crc32.ChecksumIEEE([]byte(k.src)), k.src, crc32.ChecksumIEEE([]byte(k.dst)), k.dst)
+		} else {
+			fmt.Fprintf(out, "\t\"%s\"[shape=\"record\",label=\"%s\",style=\"solid\"]\n", k.src, k.src)
+			fmt.Fprintf(out, "\t\"%s\" -> \"%s\"\n", k.src, k.dst)
+		}
+
+	}
+
+	if *formatFlag != "mermaidjs" {
+		io.WriteString(out, "}")
+	}
 
 	return 0
 }

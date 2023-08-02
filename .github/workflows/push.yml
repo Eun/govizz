@@ -1,0 +1,18 @@
+# this workflow will run on all pushes.
+on:
+  push:
+
+name: "push"
+jobs:
+
+  # draft your next release notes as pull requests are merged into "master"
+  # the configuration is at /.github/release-drafter.yml.
+  update_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: release-drafter/release-drafter@v5
+        if: github.ref == 'refs/heads/${{github.master_branch}}'
+        with:
+          config-name: release-drafter.yml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

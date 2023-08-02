@@ -2,8 +2,9 @@
 Visualize go dependencies.
 
 ```
-go get -u github.com/Eun/govizz
-govizz | dot -Tsvg -o deps.svg
+$ go install github.com/Eun/govizz@latest
+$ govizz | dot -Tsvg -o deps.svg
+$ govizz --format=mermaidjs
 ```
 
 
