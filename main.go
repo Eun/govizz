@@ -163,7 +163,7 @@ func run() int {
 	}
 
 	if *formatFlag == "mermaidjs" {
-		io.WriteString(out, "graph TD\n")
+		io.WriteString(out, "graph LR\n")
 	} else {
 		io.WriteString(out, "digraph main{\n\tedge[arrowhead=vee]\n\tgraph [rankdir=LR,compound=true,ranksep=1.0];\n")
 	}
