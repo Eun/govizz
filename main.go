@@ -302,6 +302,16 @@ func walkFile(deps *[]dep, visited *[]string, path string, f *os.File) error {
 				continue
 			}
 		}
+		if *includeVendorFlag {
+			fullImp = filepath.Join("vendor", imp)
+			if dirExists(fullImp) {
+				*deps = append(*deps, dep{
+					src: path,
+					dst: fullImp,
+				})
+				continue
+			}
+		}
 	}
 	return nil
 }
